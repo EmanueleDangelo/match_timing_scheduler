@@ -58,3 +58,21 @@ schedule_template = st.sidebar.text_area(
     value=default_template, 
     height=350
 )
+
+st.sidebar.markdown("---")
+
+# Generate schedule
+generate_button = st.sidebar.button("GENERATE SCHEDULE", use_container_width=True)
+
+# =========================================================
+# MAIN SCREEN LOGIC
+# =========================================================
+
+# If the user clicks the button, process the logic
+if generate_button:
+    # This is a temporary success message for testing Step 1
+    # We will replace this with the real mathematical calculations in Step 2!
+    st.success(f"Generating schedule for the match against **{opposition if opposition else 'Unknown Opposition'}** at **{ko_time.strftime('%H:%M')}**...")
+else:
+    # Default instruction message before the button is clicked
+    st.info("Use the 'Scheduler' sidebar to input your match details, then click **Generate Schedule** (tap the '>' arrow on mobile).")
