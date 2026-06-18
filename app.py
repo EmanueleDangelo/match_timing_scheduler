@@ -168,7 +168,7 @@ if generate_button:
         clipboard_payload = f"*MATCH TIMINGS*\n\n"
         clipboard_payload += f"vs {opp_name.upper()}\n"
         clipboard_payload += f"Kick-off: {formatted_ko_time}\n"
-        clipboard_payload += "--------------------------------------\n"
+        clipboard_payload += "--------------------------------\n"
         clipboard_payload += "\n".join(raw_text_lines)
         
         st.text_area(
