@@ -9,7 +9,7 @@ st.set_page_config(
 
 
 # Main Screen Placeholder
-st.title("⏱️ Match Day Timeline")
+st.title("⏱️ Match Timings Scheduler")
 
 
 # =========================================================
