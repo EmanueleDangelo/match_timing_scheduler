@@ -7,14 +7,6 @@ st.set_page_config(
     page_title="⏱️ Match Day Scheduler", 
 )
 
-st.markdown("""
-    <style>
-    [data-testid="stSidebar"] textarea {
-        font-size: 12pt !important; /* Bumps up font 1-2 points */
-        font-family: monospace;     /* Keeps characters aligned */
-    }
-    </style>
-    """, unsafe_allow_html=True)
 
 # Main Screen Placeholder
 st.title("⏱️ Match Day Timeline")
