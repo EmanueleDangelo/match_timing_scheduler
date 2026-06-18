@@ -76,7 +76,7 @@ if generate_button:
     formatted_ko_time = ko_time.strftime("%H:%M")
     opp_name = opposition.strip() if opposition.strip() else "Opposition"
     
-    # 1. PRE-PROCESS LINES AND CALCULATE REAL DATETIMES FOR VALIDATION
+    # PRE-PROCESS LINES AND CALCULATE REAL DATETIMES FOR VALIDATION
     parsed_events = []
     lines = schedule_template.strip().split('\n')
     
@@ -121,7 +121,7 @@ if generate_button:
                     "raw_desc": line
                 })
 
-    # 2. CHRONOLOGICAL DATETIME SANITY CHECK
+    # CHRONOLOGICAL DATETIME SANITY CHECK
     is_chronological = True
     error_message = ""
     last_valid_datetime = None
@@ -132,7 +132,7 @@ if generate_button:
             
         if last_valid_datetime is not None:
             # The next timeline event *must* be strictly later than the previous event
-            if event["datetime"] <= last_valid_datetime:
+            if event["datetime"] < last_valid_datetime:
                 is_chronological = False
                 error_message = f"""
                 ❌ **Timeline Sequencing Error:** Your timeline goes backwards or stalls!
@@ -144,7 +144,7 @@ if generate_button:
                 
         last_valid_datetime = event["datetime"]
 
-    # 3. RENDER UI ONLY IF CHRONOLOGY SANITY CHECK PASSES
+    # RENDER UI ONLY IF CHRONOLOGY SANITY CHECK PASSES
     if not is_chronological:
         st.error(error_message)
     else:
