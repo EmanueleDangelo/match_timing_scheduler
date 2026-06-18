@@ -173,7 +173,7 @@ if generate_button:
         st.markdown("### Copy/Paste Section")
         
         # Constructing a clean text format for Messaging Apps (WhatsApp, Messenger, etc.)
-        clipboard_payload = f"*MATCH TIMINGS*\n"
+        clipboard_payload = f"*MATCH TIMINGS*\n\n"
         clipboard_payload += f"vs {opp_name.upper()}\n"
         clipboard_payload += f"Kick-off: {formatted_ko_time}\n"
         clipboard_payload += "--------------------------------------\n"
