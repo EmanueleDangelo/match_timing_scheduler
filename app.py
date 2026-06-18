@@ -4,7 +4,7 @@ import re
 
 # Standard page config without forcing wide layouts
 st.set_page_config(
-    page_title="⏱️ Match Day Scheduler", 
+    page_title="⏱️ Match Timings Scheduler", 
 )
 
 
