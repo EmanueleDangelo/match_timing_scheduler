@@ -1,5 +1,6 @@
 import streamlit as st
 import datetime
+import re 
 
 # Standard page config without forcing wide layouts
 st.set_page_config(
@@ -68,11 +69,77 @@ generate_button = st.sidebar.button("GENERATE SCHEDULE", use_container_width=Tru
 # MAIN SCREEN LOGIC
 # =========================================================
 
-# If the user clicks the button, process the logic
 if generate_button:
-    # This is a temporary success message for testing Step 1
-    # We will replace this with the real mathematical calculations in Step 2!
-    st.success(f"Generating schedule for the match against **{opposition if opposition else 'Unknown Opposition'}** at **{ko_time.strftime('%H:%M')}**...")
+
+    # Base Setup for DateTime Calculations
+    today = datetime.date.today()
+    ko_datetime = datetime.datetime.combine(today, ko_time)
+    formatted_ko_time = ko_time.strftime("%H:%M")
+    opp_name = opposition.strip() if opposition.strip() else "Opposition"
+    
+    # Main Header (KO vs Opposition @ Time)
+    st.markdown(f"## KO vs {opp_name} @ {formatted_ko_time}")
+    st.write("---")
+    
+    # Processing the Text Template Line by Line
+    table_rows = []
+    raw_text_lines = []
+    lines = schedule_template.strip().split('\n')
+    
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        
+        # Scenario A: The Kick-Off Line itself
+        if "KO (GAME)" in line:
+            formatted_time = f"**{formatted_ko_time}**"
+            event_desc = "**KICK OFF (GAME)**"
+            table_rows.append((formatted_time, event_desc))
+            raw_text_lines.append(f"{formatted_ko_time} - KICK OFF (GAME)")
+            
+        # Scenario B: Countdowns (KO - X min)
+        else:
+            match = re.search(r"KO\s*-\s*(\d+)\s*min:\s*(.*)", line)
+            if match:
+                mins_to_subtract = int(match.group(1))
+                event_desc = match.group(2)
+                
+                # Time Delta calculation
+                calculated_time = ko_datetime - datetime.timedelta(minutes=mins_to_subtract)
+                time_str = calculated_time.strftime("%H:%M")
+                
+                table_rows.append((f"**{time_str}**", event_desc))
+                raw_text_lines.append(f"{time_str} - {event_desc}")
+            else:
+                # Text fallback line if pattern does not match
+                table_rows.append(("--:--", line))
+                raw_text_lines.append(f"--:-- - {line}")
+                
+    # Render the Timings Markdown Table Layout
+    markdown_table = "| Time | Action |\n| :--- | :--- |\n"
+    for time_cell, event_cell in table_rows:
+        markdown_table += f"| {time_cell} | {event_cell} |\n"
+    
+    st.markdown(markdown_table)
+    st.write("---")
+    
+    # Dedicated Copy/Paste Section for Sharing
+    st.markdown("###Copy/Paste Section")
+    
+    # Constructing a clean text format for Messaging Apps (WhatsApp, Messenger, etc.)
+    clipboard_payload = f"**MATCH TIMINGS**\n"
+    clipboard_payload += f"vs {opp_name.upper()}\n"
+    clipboard_payload += f"Kick-off: {formatted_ko_time}\n"
+    clipboard_payload += "--------------------------------------\n"
+    clipboard_payload += "\n".join(raw_text_lines)
+    
+    st.text_area(
+        label="Tap inside the box below to select all and copy straight to WhatsApp:", 
+        value=clipboard_payload, 
+        height=250
+    )
+
 else:
-    # Default instruction message before the button is clicked
-    st.info("Use the 'Scheduler' sidebar to input your match details, then click **Generate Schedule** (tap the '>' arrow on mobile).")
+    # Initial landing screen view before clicking the button
+    st.info("👈 Use the 'Scheduler' sidebar inputs on the left to get started, then click **Generate Schedule**.")
