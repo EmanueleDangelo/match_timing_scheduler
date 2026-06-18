@@ -4,7 +4,7 @@ import re
 
 # Standard page config without forcing wide layouts
 st.set_page_config(
-    page_title="Match Day Scheduler", 
+    page_title="⏱️ Match Day Scheduler", 
 )
 
 st.markdown("""
@@ -18,7 +18,6 @@ st.markdown("""
 
 # Main Screen Placeholder
 st.title("⏱️ Match Day Timeline")
-st.info("Use the 'Scheduler' sidebar to input your match details (tap the '>' arrow on mobile).")
 
 
 # =========================================================
@@ -77,68 +76,114 @@ if generate_button:
     formatted_ko_time = ko_time.strftime("%H:%M")
     opp_name = opposition.strip() if opposition.strip() else "Opposition"
     
-    # Main Header (KO vs Opposition @ Time)
-    st.markdown(f"## KO vs {opp_name} @ {formatted_ko_time}")
-    st.write("---")
-    
-    # Processing the Text Template Line by Line
-    table_rows = []
-    raw_text_lines = []
+    # 1. PRE-PROCESS LINES AND CALCULATE REAL DATETIMES FOR VALIDATION
+    parsed_events = []
     lines = schedule_template.strip().split('\n')
     
-    for line in lines:
+    for idx, line in enumerate(lines):
         line = line.strip()
         if not line:
             continue
         
-        # Scenario A: The Kick-Off Line itself
         if "KO (GAME)" in line:
-            formatted_time = f"**{formatted_ko_time}**"
-            event_desc = "**KICK OFF (GAME)**"
-            table_rows.append((formatted_time, event_desc))
-            raw_text_lines.append(f"{formatted_ko_time} - KICK OFF (GAME)")
-            
-        # Scenario B: Countdowns (KO - X min)
+            parsed_events.append({
+                "row_num": idx + 1,
+                "datetime": ko_datetime,
+                "time_str": formatted_ko_time,
+                "is_bold_time": True,
+                "event_desc": "**KICK OFF (GAME)**",
+                "raw_desc": "KICK OFF (GAME)"
+            })
         else:
             match = re.search(r"KO\s*-\s*(\d+)\s*min:\s*(.*)", line)
             if match:
                 mins_to_subtract = int(match.group(1))
                 event_desc = match.group(2)
                 
-                # Time Delta calculation
-                calculated_time = ko_datetime - datetime.timedelta(minutes=mins_to_subtract)
-                time_str = calculated_time.strftime("%H:%M")
+                calculated_datetime = ko_datetime - datetime.timedelta(minutes=mins_to_subtract)
                 
-                table_rows.append((f"**{time_str}**", event_desc))
-                raw_text_lines.append(f"{time_str} - {event_desc}")
+                parsed_events.append({
+                    "row_num": idx + 1,
+                    "datetime": calculated_datetime,
+                    "time_str": calculated_datetime.strftime("%H:%M"),
+                    "is_bold_time": True,
+                    "event_desc": event_desc,
+                    "raw_desc": event_desc
+                })
             else:
-                # Text fallback line if pattern does not match
-                table_rows.append(("--:--", line))
-                raw_text_lines.append(f"--:-- - {line}")
+                # Fallback line for unformatted strings (ignored in chronological calculation check)
+                parsed_events.append({
+                    "row_num": idx + 1,
+                    "datetime": None,
+                    "time_str": "--:--",
+                    "is_bold_time": False,
+                    "event_desc": line,
+                    "raw_desc": line
+                })
+
+    # 2. CHRONOLOGICAL DATETIME SANITY CHECK
+    is_chronological = True
+    error_message = ""
+    last_valid_datetime = None
+    
+    for event in parsed_events:
+        if event["datetime"] is None:
+            continue  # Skip raw descriptive strings
+            
+        if last_valid_datetime is not None:
+            # The next timeline event *must* be strictly later than the previous event
+            if event["datetime"] <= last_valid_datetime:
+                is_chronological = False
+                error_message = f"""
+                ❌ **Timeline Sequencing Error:** Your timeline goes backwards or stalls!
+                \n* **Problem Area (Row {event['row_num']}):** Calculated time evaluates to **{event['time_str']}** (`{event['raw_desc']}`)
+                \n* It falls at or before your previous milestone time (**{last_valid_datetime.strftime('%H:%M')}**). 
+                \n* Please adjust your countdown order to flow progressively forward toward Kick-Off.
+                """
+                break
                 
-    # Render the Timings Markdown Table Layout
-    markdown_table = "| Time | Action |\n| :--- | :--- |\n"
-    for time_cell, event_cell in table_rows:
-        markdown_table += f"| {time_cell} | {event_cell} |\n"
-    
-    st.markdown(markdown_table)
-    st.write("---")
-    
-    # Dedicated Copy/Paste Section for Sharing
-    st.markdown("###Copy/Paste Section")
-    
-    # Constructing a clean text format for Messaging Apps (WhatsApp, Messenger, etc.)
-    clipboard_payload = f"**MATCH TIMINGS**\n"
-    clipboard_payload += f"vs {opp_name.upper()}\n"
-    clipboard_payload += f"Kick-off: {formatted_ko_time}\n"
-    clipboard_payload += "--------------------------------------\n"
-    clipboard_payload += "\n".join(raw_text_lines)
-    
-    st.text_area(
-        label="Tap inside the box below to select all and copy straight to WhatsApp:", 
-        value=clipboard_payload, 
-        height=250
-    )
+        last_valid_datetime = event["datetime"]
+
+    # 3. RENDER UI ONLY IF CHRONOLOGY SANITY CHECK PASSES
+    if not is_chronological:
+        st.error(error_message)
+    else:
+        # Main Header (KO vs Opposition @ Time)
+        st.markdown(f"## KO vs {opp_name} @ {formatted_ko_time}")
+        st.write("---")
+        
+        # Build layout collections
+        table_rows = []
+        raw_text_lines = []
+        
+        for event in parsed_events:
+            t_cell = f"**{event['time_str']}**" if event['is_bold_time'] else event['time_str']
+            table_rows.append((t_cell, event['event_desc']))
+            raw_text_lines.append(f"{event['time_str']} - {event['raw_desc']}")
+                    
+        # Render the Timings Markdown Table Layout
+        markdown_table = "| Time | Action |\n| :--- | :--- |\n"
+        for time_cell, event_cell in table_rows:
+            markdown_table += f"| {time_cell} | {event_cell} |\n"
+        
+        st.markdown(markdown_table)
+        st.write("---")
+        
+        # Dedicated Copy/Paste Section for Sharing
+        st.markdown("### Copy/Paste Section")
+        
+        # Constructing a clean text format for Messaging Apps (WhatsApp, Messenger, etc.)
+        clipboard_payload = f"*MATCH TIMINGS*\n"
+        clipboard_payload += f"vs {opp_name.upper()}\n"
+        clipboard_payload += f"Kick-off: {formatted_ko_time}\n"
+        clipboard_payload += "--------------------------------------\n"
+        clipboard_payload += "\n".join(raw_text_lines)
+        
+        st.text_area(
+            label="Tap inside the box below to select all and copy straight to WhatsApp:", 
+            value=clipboard_payload, 
+            height=250
+        )
 
 else:
     # Initial landing screen view before clicking the button
